@@ -48,5 +48,19 @@ describe("Given I am connected as an employee", () => {
       const buttonNewBill = screen.getByTestId("btn-new-bill");
       expect(buttonNewBill).toBeTruthy();
     });
+    test("Then clicking on 'New Bill' button should navigate to NewBill page", () => {
+      Object.defineProperty(window, 'localStorage', { value: localStorageMock });
+      window.localStorage.setItem('user', JSON.stringify({
+        type: 'Employee'
+      }));
+      const root = document.createElement("div");
+      root.setAttribute("id", "root");
+      document.body.append(root);
+      router();
+      window.onNavigate(ROUTES_PATH.Bills);
+      const buttonNewBill = screen.getByTestId("btn-new-bill");
+      buttonNewBill.click();
+      expect(window.location.hash).toBe(`${ROUTES_PATH.NewBill}`);
+    });
   })
 })
