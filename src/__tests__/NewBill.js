@@ -55,7 +55,7 @@ describe("Given I am connected as an employee", () => {
       })
 
       const fileInput = screen.getByTestId("file");
-      const file = new File(["test"], "test.txt", { type: "image/png" });
+      const file = new File(["test"], "test.png", { type: "image/png" });
 
       global.alert = jest.fn(); 
 
@@ -65,7 +65,6 @@ describe("Given I am connected as an employee", () => {
 
       global.alert.mockRestore();
     })
-
     test("Then an alert should be displayed if the file type is invalid", () => {
       document.body.innerHTML = NewBillUI();
       const newBill = new NewBill({
@@ -87,6 +86,33 @@ describe("Given I am connected as an employee", () => {
 
       global.alert.mockRestore();
     })
+    test("Then the form should be submitted and the bill created", async () => {
+      document.body.innerHTML = NewBillUI();
+      const newBill = new NewBill({
+          document,
+          onNavigate: jest.fn(),
+          store: mockStore,
+          localStorage: window.localStorage,
+      });
+  
+      fireEvent.change(screen.getByTestId("expense-type"), { target: { value: "Transports" } });
+      fireEvent.change(screen.getByTestId("expense-name"), { target: { value: "Train Paris-Lyon" } });
+      fireEvent.change(screen.getByTestId("amount"), { target: { value: "250" } });
+      fireEvent.change(screen.getByTestId("datepicker"), { target: { value: "2023-12-08" } });
+      fireEvent.change(screen.getByTestId("vat"), { target: { value: "20" } });
+      fireEvent.change(screen.getByTestId("pct"), { target: { value: "20" } });
+      fireEvent.change(screen.getByTestId("commentary"), { target: { value: "Voyage professionnel" } });
+  
+      const fileInput = screen.getByTestId("file");
+      const file = new File(["test"], "test.png", { type: "image/png" });
+      fireEvent.change(fileInput, { target: { files: [file] } });
+  
+      fireEvent.click(screen.getByText('Envoyer')); 
+  
+      expect(mockStore.bills).toHaveBeenCalled();
+
+      expect(newBill.onNavigate).toHaveBeenCalledWith("#employee/bills");
+  })
 
   })
 })
