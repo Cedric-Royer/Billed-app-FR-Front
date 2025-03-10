@@ -116,8 +116,8 @@ describe("Given I am connected as an employee", () => {
       });
     });
     
-
     describe("When I call getBills", () => {
+
       test('Then it should return the bills sorted by date and formatted correctly', async () => {
         const billsContainer = new Bills({ document, store: store });
         const billsFromGetBills = await billsContainer.getBills();
@@ -129,30 +129,58 @@ describe("Given I am connected as an employee", () => {
         expect(dates).toEqual(sortedDates);
       });
 
-      test('Then it should handle 404 error correctly if the API call fails with a 404', async () => {
+      test("Then it should handle 404 error correctly if the API call fails with a 404", async () => {
         jest.spyOn(store.bills(), "list").mockRejectedValueOnce(new Error("Erreur 404"));
-
-        const billsContainer = new Bills({ document });
-
-        try {
-          await billsContainer.getBills();
-        } catch (error) {
-          expect(error.message).toBe("Erreur 404");
-        }
+      
+        const billsContainer = new Bills({ document, store });
+      
+        await expect(billsContainer.getBills()).rejects.toThrow("Erreur 404");
       });
 
-      test('Then it should handle 500 error correctly if the API call fails with a 500', async () => {
-        jest.spyOn(mockStore.bills(), "list").mockRejectedValueOnce(new Error("Erreur 500"));
+      test("Then it should display 404 error message when API returns a 404", async () => {
 
-        const billsContainer = new Bills({ document });
-
-        try {
-          await billsContainer.getBills();
-        } catch (error) {
-          expect(error.message).toBe("Erreur 500");
-        }
+        jest.spyOn(store.bills(), "list").mockRejectedValueOnce(new Error("Erreur 404"));
+      
+        window.onNavigate(ROUTES_PATH.Bills); 
+      
+        await waitFor(() => {
+          const errorMessage = document.querySelector('[data-testid="error-message"]');
+          
+          expect(errorMessage).toBeTruthy();
+          expect(errorMessage.textContent).toContain("Erreur 404");
+        });
+      });
+            
+      test("Then it should handle 500 error correctly if the API call fails with a 500", async () => {
+        jest.spyOn(store.bills(), "list").mockRejectedValueOnce(new Error("Erreur 500"));
+      
+        const billsContainer = new Bills({ document, store });
+      
+        await expect(billsContainer.getBills()).rejects.toThrow("Erreur 500");
       });
 
+      test("Then it should display 500 error message when API returns a 500", async () => {
+
+        jest.spyOn(store.bills(), "list").mockRejectedValueOnce(new Error("Erreur 500"));
+      
+        window.onNavigate(ROUTES_PATH.Bills); 
+      
+        await waitFor(() => {
+          const errorMessage = document.querySelector('[data-testid="error-message"]');
+          
+          expect(errorMessage).toBeTruthy();
+          expect(errorMessage.textContent).toContain("Erreur 500");
+        });
+      });
+
+      test("Then it should return undefined if store is not provided", async () => {
+        const billsContainer = new Bills({ document, store: null });
+    
+        const result = await billsContainer.getBills();
+    
+        expect(result).toBeUndefined();
+      });
+     
       test("should log an error and return unformatted data when formatDate fails", async () => {
         const corruptedBills = [
             {
