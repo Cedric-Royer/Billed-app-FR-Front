@@ -16,6 +16,7 @@ import router from "../app/Router.js";
 jest.mock("../app/Store", () => mockStore)
 
 describe("Given I am connected as an employee", () => {
+
   beforeEach(() => {
     Object.defineProperty(window, 'localStorage', { value: localStorageMock })
     window.localStorage.setItem('user', JSON.stringify({
@@ -23,6 +24,7 @@ describe("Given I am connected as an employee", () => {
     }))
     const root = document.createElement("div")
     root.setAttribute("id", "root")
+    document.body.innerHTML = ''
     document.body.append(root)
     router()
     window.onNavigate(ROUTES_PATH.Bills)
@@ -43,102 +45,79 @@ describe("Given I am connected as an employee", () => {
       expect(dates).toEqual(datesSorted)
     })
 
+    test("Then the 'New Bill' button should be present on the page", async () => {
+      const buttonNewBill = screen.getByTestId("btn-new-bill");
+      expect(buttonNewBill).toBeTruthy();
+    });
+
+    test("Then clicking on 'New Bill' button should navigate to NewBill page", async () => {
+      const buttonNewBill = screen.getByTestId("btn-new-bill");
+      buttonNewBill.click();
+      expect(window.location.hash).toBe(`${ROUTES_PATH.NewBill}`);
+    });
+
     describe("When I click on the eye icon", () => {
-      test('Then clicking on an eye icon should open modal ', () => {
-        $.fn.modal = jest.fn()
-        new Bills({ document })
-        const iconEye = screen.getAllByTestId("icon-eye")[0]
+      beforeEach(() => {
+        $.fn.modal = jest.fn();
+      });
+    
+      test("Then clicking on an eye icon should call handleClickIconEye", async () => {
+        document.body.innerHTML = `<div data-testid="icon-eye" data-bill-url="url1"></div>`;
+        
+        const billsContainer = new Bills({ document });
+        const handleClickIconEyeSpy = jest.spyOn(billsContainer, 'handleClickIconEye');
+        
+        const iconEye = screen.getByTestId("icon-eye");
         iconEye.click();
+    
+        expect(handleClickIconEyeSpy).toHaveBeenCalledWith(iconEye);
+      });
+    
+      test("Then clicking on an eye icon should open modal", () => {
+        document.body.innerHTML = `<div data-testid="icon-eye" data-bill-url="url1"></div>`;
+    
+        new Bills({ document });
+    
+        const iconEye = screen.getByTestId("icon-eye");
+        iconEye.click();
+    
         expect($.fn.modal).toHaveBeenCalledWith("show");
       });
-    })
+    
+      test("Then clicking on eye icons should open modal for each icon", () => {
+        document.body.innerHTML = `
+          <div data-testid="icon-eye" data-bill-url="url1"></div>
+          <div data-testid="icon-eye" data-bill-url="url2"></div>
+          <div data-testid="icon-eye" data-bill-url="url3"></div>
+        `;
+    
+        new Bills({ document });
+        const iconEyes = screen.getAllByTestId("icon-eye");
+    
+        iconEyes.forEach(icon => icon.click());
+    
+        expect($.fn.modal).toHaveBeenCalledTimes(3);
+        expect($.fn.modal).toHaveBeenCalledWith("show");
+      });
+    
+      test("should not call handleClickIconEye when iconEye is falsy", () => {
+        document.querySelectorAll = jest.fn(() => null);
+    
+        const billsInstance = new Bills({
+          document,
+          onNavigate: jest.fn(),
+          store: {},
+          localStorage: {},
+        });
+    
+        const handleClickIconEyeSpy = jest.spyOn(billsInstance, 'handleClickIconEye');
+    
+        expect(handleClickIconEyeSpy).not.toHaveBeenCalled();
+      });
+    });
+    
 
     describe("When I call getBills", () => {
-      test("should log an error and return unformatted data when formatDate fails", async () => {
-        const corruptedBills = [
-          {
-            id: "1",
-            status: "pending",
-            date: "invalid-date",
-            amount: 100,
-          },
-        ];
-
-        jest.spyOn(mockStore.bills(), "list").mockResolvedValueOnce(corruptedBills);
-
-        const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => { });
-
-        const billsContainer = new Bills({ document, store: mockStore });
-
-        const result = await billsContainer.getBills();
-
-        expect(consoleSpy).toHaveBeenCalled();
-        expect(consoleSpy.mock.calls[0][0]).toBeInstanceOf(Error);
-        expect(consoleSpy.mock.calls[0][1]).toBe("for");
-        expect(consoleSpy.mock.calls[0][2]).toEqual(corruptedBills[0]);
-        expect(result[0].date).toBe("invalid-date");
-
-        consoleSpy.mockRestore();
-      });
-    })
-  })
-  describe('Given I am a user connected as an employee', () => {
-    describe("When I am on Bills Page", () => {
-      describe("When I click on the eye icon", () => {
-        test("Then clicking on an eye icon should call handleClickIconEye", async () => {
-          const billsContainer = new Bills({ document })
-          const handleClickIconEyeSpy = jest.spyOn(billsContainer, 'handleClickIconEye')
-          const iconEye = screen.getAllByTestId("icon-eye")[0]
-          iconEye.click()
-          expect(handleClickIconEyeSpy).toHaveBeenCalledWith(iconEye)
-        })
-
-        test('Then clicking on an eye icon should open modal', () => {
-          $.fn.modal = jest.fn()
-          new Bills({ document })
-          const iconEye = screen.getAllByTestId("icon-eye")[0]
-          iconEye.click()
-          expect($.fn.modal).toHaveBeenCalledWith("show")
-        })
-
-        test('Then clicking on eye icons should open modal for each icon', () => {
-          $.fn.modal = jest.fn();
-          document.body.innerHTML = `
-            <div data-testid="icon-eye" data-bill-url="url1"></div>
-            <div data-testid="icon-eye" data-bill-url="url2"></div>
-            <div data-testid="icon-eye" data-bill-url="url3"></div>
-          `;
-
-          const billsInstance = new Bills({ document });
-          const iconEyes = screen.getAllByTestId("icon-eye");
-
-          iconEyes.forEach(icon => {
-            icon.click();
-          });
-
-          expect($.fn.modal).toHaveBeenCalledTimes(3);
-          expect($.fn.modal).toHaveBeenCalledWith("show");
-        });
-
-        test('should not call handleClickIconEye when iconEye is falsy', () => {
-
-          document.querySelectorAll = jest.fn(() => null);
-
-          const billsInstance = new Bills({
-            document,
-            onNavigate: jest.fn(),
-            store: {},
-            localStorage: {}
-          });
-
-          const handleClickIconEyeSpy = jest.spyOn(billsInstance, 'handleClickIconEye');
-
-          expect(handleClickIconEyeSpy).not.toHaveBeenCalled();
-        });
-      })
-    })
-
-    describe("When I am on Bills Page and I call getBills", () => {
       test('Then it should return the bills sorted by date and formatted correctly', async () => {
         const billsContainer = new Bills({ document, store: store });
         const billsFromGetBills = await billsContainer.getBills();
@@ -173,6 +152,33 @@ describe("Given I am connected as an employee", () => {
           expect(error.message).toBe("Erreur 500");
         }
       });
+
+      test("should log an error and return unformatted data when formatDate fails", async () => {
+        const corruptedBills = [
+            {
+                id: "1",
+                    status: "pending",
+                    date: "invalid-date",
+                    amount: 100,
+            },
+        ];
+
+        jest.spyOn(mockStore.bills(), "list").mockResolvedValueOnce(corruptedBills);
+
+        const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => { });
+
+        const billsContainer = new Bills({ document, store: mockStore });
+
+        const result = await billsContainer.getBills();
+
+        expect(consoleSpy).toHaveBeenCalled();
+        expect(consoleSpy.mock.calls[0][0]).toBeInstanceOf(Error);
+        expect(consoleSpy.mock.calls[0][1]).toBe("for");
+        expect(consoleSpy.mock.calls[0][2]).toEqual(corruptedBills[0]);
+        expect(result[0].date).toBe("invalid-date");
+
+        consoleSpy.mockRestore();
+      });
     });
 
     describe("When formatDate is called", () => {
@@ -180,5 +186,5 @@ describe("Given I am connected as an employee", () => {
         expect(() => formatDate("invalid-date")).toThrowError();
       });
     });
-  });
-});
+  })
+})
