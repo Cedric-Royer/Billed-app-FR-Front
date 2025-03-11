@@ -48,7 +48,7 @@ describe('Given I am connected as an Admin', () => {
   })
 
   describe('When I am on Dashboard page and I click on arrow', () => {
-    test('Then, tickets list should be unfolding, and cards should appear', async () => {
+    test('Then, tickets list should be unfolding and folding, and cards should appear and disappear', async () => {
 
       const onNavigate = (pathname) => {
         document.body.innerHTML = ROUTES({ pathname })
@@ -73,10 +73,17 @@ describe('Given I am connected as an Admin', () => {
       const icon3 = screen.getByTestId('arrow-icon3')
 
       icon1.addEventListener('click', handleShowTickets1)
+
       userEvent.click(icon1)
       expect(handleShowTickets1).toHaveBeenCalled()
       await waitFor(() => screen.getByTestId(`open-bill47qAXb6fIm2zOKkLzMro`) )
       expect(screen.getByTestId(`open-bill47qAXb6fIm2zOKkLzMro`)).toBeTruthy()
+
+      userEvent.click(icon1)
+      expect(handleShowTickets1).toHaveBeenCalledTimes(2); 
+      expect(icon1.style.transform).toBe('rotate(90deg)'); 
+      expect(document.getElementById(`status-bills-container1`).innerHTML).toBe(''); 
+
       icon2.addEventListener('click', handleShowTickets2)
       userEvent.click(icon2)
       expect(handleShowTickets2).toHaveBeenCalled()
