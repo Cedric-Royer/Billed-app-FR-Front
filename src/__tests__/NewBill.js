@@ -112,7 +112,74 @@ describe("Given I am connected as an employee", () => {
       expect(mockStore.bills).toHaveBeenCalled();
 
       expect(newBill.onNavigate).toHaveBeenCalledWith("#employee/bills");
-  })
-
+    })
+    test("Then it should handle errors when the file creation fails", async () => {
+      mockStore.bills = jest.fn(() => ({
+        create: jest.fn().mockRejectedValueOnce(new Error("Erreur de création de fichier"))
+      }));
+    
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    
+      document.body.innerHTML = NewBillUI();
+      const newBill = new NewBill({
+        document,
+        onNavigate: jest.fn(),
+        store: mockStore,
+        localStorage: window.localStorage,
+      });
+    
+      const fileInput = screen.getByTestId("file");
+      const file = new File(["test"], "test.png", { type: "image/png" });
+      fireEvent.change(fileInput, { target: { files: [file] } });
+    
+      await waitFor(() => expect(consoleSpy).toHaveBeenCalledWith(expect.any(Error)));
+    
+      consoleSpy.mockRestore();
+    });
+    test("Then it should handle errors when the bill update fails", async () => {
+      mockStore.bills = jest.fn(() => ({
+        update: jest.fn().mockRejectedValueOnce(new Error("Erreur de mise à jour de la facture"))
+      }));
+    
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    
+      document.body.innerHTML = NewBillUI();
+      const newBill = new NewBill({
+        document,
+        onNavigate: jest.fn(),
+        store: mockStore,
+        localStorage: window.localStorage,
+      });
+    
+      const form = screen.getByTestId("form-new-bill");
+      fireEvent.submit(form);
+    
+      await waitFor(() => expect(consoleSpy).toHaveBeenCalledWith(expect.any(Error)));
+    
+      consoleSpy.mockRestore();
+    });
+    test("Then it should not try to update the bill if the store is not defined", async () => {
+      const mockStoreUndefined = undefined;
+    
+      const updateSpy = jest.fn();
+    
+      document.body.innerHTML = NewBillUI();
+      const newBill = new NewBill({
+        document,
+        onNavigate: jest.fn(),
+        store: mockStoreUndefined,
+        localStorage: window.localStorage,
+      });
+    
+      const form = screen.getByTestId("form-new-bill");
+      fireEvent.submit(form);
+    
+      await waitFor(() => expect(updateSpy).not.toHaveBeenCalled());
+    
+    });
+    
+    
+    
+    
   })
 })
