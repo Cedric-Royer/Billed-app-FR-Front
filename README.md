@@ -73,7 +73,7 @@ jest src/__tests__/your_test_file.js
 
 ## Comment voir la couverture de test ?
 
-`http://127.0.0.1:8080/coverage/lcov-report/`
+[Accéder à la couverture de test](http://127.0.0.1:8080/coverage/lcov-report/)
 
 ## Comptes et utilisateurs :
 
