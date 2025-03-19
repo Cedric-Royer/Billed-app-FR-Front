@@ -119,14 +119,21 @@ describe("Given I am connected as an employee", () => {
     describe("When I call getBills", () => {
 
       test('Then it should return the bills sorted by date and formatted correctly', async () => {
+        const mockBills = [
+          { id: "1", date: '2023-03-01', status: "pending", amount: 100, type: "Hôtel et logement", name: "bill1" },
+          { id: "2", date: '2023-01-01', status: "accepted", amount: 200, type: "Transports", name: "bill2" },
+          { id: "3", date: '2023-02-01', status: "refused", amount: 300,  type: "Restaurants et bars", name: "bill3" },
+        ];
+        jest.spyOn(store.bills(), "list").mockResolvedValueOnce(mockBills);
+    
         const billsContainer = new Bills({ document, store: store });
         const billsFromGetBills = await billsContainer.getBills();
-
+    
         expect(Array.isArray(billsFromGetBills)).toBe(true);
-
+    
         const dates = billsFromGetBills.map(bill => bill.date);
-        const sortedDates = [...dates].sort((a, b) => new Date(a) - new Date(b));
-        expect(dates).toEqual(sortedDates);
+        const expectedOrder = ['1 Mar. 23', '1 Fév. 23', '1 Jan. 23' ];
+        expect(dates).toEqual(expectedOrder);
       });
 
       test("Then it should handle 404 error correctly if the API call fails with a 404", async () => {
